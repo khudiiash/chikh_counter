@@ -13,6 +13,7 @@ export default defineConfig({
         name: 'Chikh Counter',
         short_name: 'Chikh',
         start_url: '/chikh_counter/',
+        scope: '/chikh_counter/',
         display: 'standalone',
         background_color: '#2F5249',
         theme_color: '#E3DE61',

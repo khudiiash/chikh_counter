@@ -1,5 +1,7 @@
 {
- "name": "App",
+ "name": "Chich Counter",
+ "id": "/chich-counter/",
+ "start_url": "/chikh_counter/",
  "icons": [
   {
    "src": "\/android-icon-36x36.png",
