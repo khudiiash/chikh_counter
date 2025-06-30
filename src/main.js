@@ -44,7 +44,6 @@ if (!localStorage.getItem('color-accent')) localStorage.setItem('color-accent', 
 
 const primary = localStorage.getItem('color-primary')
 const accent = localStorage.getItem('color-accent')
-  console.log(primary, accent)
 
 document.documentElement.style.setProperty('--primary', primary)
 document.documentElement.style.setProperty('--accent', accent)

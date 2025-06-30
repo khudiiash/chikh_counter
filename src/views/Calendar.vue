@@ -40,7 +40,6 @@ function onDayClick(day) {
   const d = day.date
   const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   const record = allData.value[dateStr]
-  console.log(day.date, dateStr, record)
   selectedDay.value = dateStr
 }
 

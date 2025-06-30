@@ -32,7 +32,6 @@ const gradientBg = computed(() => {
   const base = primary.value
   const light = shadeColor(base, 0.5)
   const dark = shadeColor(base, -0.3)
-  console.log(base, light, dark)
   return `linear-gradient(135deg, ${light} 0%, ${base} 50%, ${dark} 100%)`
 })
 

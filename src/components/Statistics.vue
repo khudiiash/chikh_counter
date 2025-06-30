@@ -136,7 +136,6 @@ const chartData = computed(() => {
           backgroundColor: (ctx) => {
             const chart = ctx.chart
             const {ctx: canvasCtx, chartArea} = chart
-            console.log('Chart backgroundColor ctx:', ctx)
             if (!chartArea) {
               // Fallback to accent color if chartArea is not ready
               return getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#E3DE61'
