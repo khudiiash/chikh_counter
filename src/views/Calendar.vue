@@ -13,10 +13,10 @@
         borderless
         transparent
         @update:pages="onUpdate"
+        @dayclick="onDayClick"
       />
     </div>
     <div v-if="selectedDay" class="day-info-box">
-      <span>День: {{ selectedDay }}</span>
       <span v-if="selectedDayCount !== null">Чіхів: {{ selectedDayCount }}</span>
     </div>
   </div>
@@ -34,6 +34,15 @@ const currentMonth = ref(new Date(today.getFullYear(), today.getMonth(), 1))
 const selectedDay = ref(null)
 
 function pad(n) { return n.toString().padStart(2, '0') }
+
+function onDayClick(day) {
+  // Fix timezone issue: use local date instead of UTC
+  const d = day.date
+  const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const record = allData.value[dateStr]
+  console.log(day.date, dateStr, record)
+  selectedDay.value = dateStr
+}
 
 function getAllGroupData() {
   const data = {}
@@ -157,9 +166,15 @@ const paintHighlights = () => {
 }
 .themed-calendar :deep(.vc-title),
 .themed-calendar :deep(.vc-arrow),
+.themed-calendar :deep(.vc-nav-arrow),
+.themed-calendar :deep(.vc-nav-item),
+.themed-calendar :deep(.vc-nav-title),
 .themed-calendar :deep(.vc-weekday) {
   background: transparent !important;
   color: var(--accent, #E3DE61) !important;
+}
+.themed-calendar :deep(.vc-popover-content) {
+  background: var(--primary, #2F5249) !important;
 }
 .themed-calendar :deep(.vc-highlights) {
   filter: blur(1px);
@@ -184,13 +199,9 @@ const paintHighlights = () => {
 }
 .day-info-box {
   margin-top: 1.5rem;
-  background: var(--accent, #E3DE61);
   color: var(--primary, #2F5249);
-  border-radius: 1.2rem;
-  padding: 1.1rem 2.2rem;
   font-size: 1.2rem;
   font-weight: 600;
-  box-shadow: 0 2px 12px var(--primary, #2F5249)22;
   display: flex;
   flex-direction: column;
   align-items: center;

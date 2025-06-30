@@ -1,12 +1,12 @@
 <template>
   <div class="auth-container" :style="{ background: gradientBg }">
-    <h2>Sign In / Register</h2>
+    <h2>Привіт</h2>
     <form @submit.prevent="onSubmit">
       <input v-model="email" type="email" placeholder="Email" required />
       <input v-model="password" type="password" placeholder="Password" required />
       <div class="auth-actions">
-        <button type="button" @click="login">Login</button>
-        <button type="button" @click="register">Register</button>
+        <button type="button" @click="login">Вхід</button>
+        <button type="button" @click="register">Реєстрація</button>
       </div>
       <div v-if="error" class="auth-error">{{ error }}</div>
     </form>
@@ -19,10 +19,9 @@ import { useRouter } from 'vue-router'
 import { auth } from '../firebase'
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth'
 
-const basePalette = [
-  '#2F5249', '#1976D2', '#D32F2F', '#7B1FA2', '#F57C00', '#388E3C', '#455A64', '#212121',
-]
-const primary = ref(localStorage.getItem('color-primary') && basePalette.includes(localStorage.getItem('color-primary')) ? localStorage.getItem('color-primary') : basePalette[0])
+const primary = ref(localStorage.getItem('color-primary'))
+const accent = ref(localStorage.getItem('color-accent'))
+
 function hexToRgb(hex) {
   let c = hex.replace('#', '')
   if (c.length === 3) c = c.split('').map(x => x + x).join('')
@@ -91,12 +90,12 @@ const onSubmit = () => {
 }
 .auth-container h2 {
   color: var(--accent, #E3DE61);
+  text-shadow: 0 5px 10px var(--accent, #2F5249);
   margin-bottom: 2rem;
   font-size: 2rem;
   font-weight: 700;
 }
 .auth-container form {
-  background: #fff;
   border-radius: 1.5rem;
   box-shadow: 0 2px 12px var(--primary, #2F5249)22;
   padding: 2rem 2rem 1.5rem 2rem;
@@ -110,10 +109,18 @@ const onSubmit = () => {
   width: 90%;
   margin-bottom: 1.2rem;
   padding: 0.9rem 1.2rem;
+  background: transparent;
+  box-shadow: 0 10px 10px 0 rgba(0, 0, 0, 0.05);
   border-radius: 1rem;
   border: 1px solid var(--primary, #2F5249)44;
   font-size: 1.1rem;
   outline: none;
+  color: var(--accent, #E3DE61);
+  &::placeholder {
+    color: #111111;
+    opacity: 0.1;
+    transition: opacity 0.2s;
+  }
 }
 .auth-actions {
   display: flex;
@@ -125,6 +132,7 @@ const onSubmit = () => {
   color: var(--primary, #2F5249);
   border: none;
   border-radius: 1rem;
+  box-shadow: 0 10px 10px 0 rgba(0, 0, 0, 0.05);
   font-size: 1.1rem;
   font-weight: 600;
   padding: 0.7rem 2.2rem;

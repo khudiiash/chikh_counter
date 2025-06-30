@@ -3,7 +3,6 @@
     <button class="back-btn" @click="$router.push('/')" aria-label="Back">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <h2>Налаштування кольорів</h2>
     <div class="palette-section">
       <div class="palette-label">Основний колір:</div>
       <div class="palette-scroll-mask">
@@ -27,26 +26,20 @@
 import { ref, onMounted, computed } from 'vue'
 
 const basePalette = [
-  '#ffffff', // white
-  '#2F5249', // green dark
-  '#1976D2', // blue dark
-  '#D32F2F', // red dark
-  '#7B1FA2', // purple dark
-  '#F57C00', // orange dark
-  '#388E3C', // green
-  '#455A64', // blue-grey
-  '#212121', // blackish
-]
+  '#E3F0FF', // Soft Blue
+  '#4cae4f', // Nature Green
+  '#282828', // Modern Dark
+  '#FFD6C0', // Peach Fuzz
+  '#F8F9FA', // Minimalist Off-White
+  '#E6E6FA', // Lavender
+];
 const accentPalette = [
-  '#ffffff', // white
-  '#E3DE61', // yellow
-  '#64B5F6', // blue
-  '#F44336', // red
-  '#BA68C8', // purple
-  '#FFB74D', // orange
-  '#81C784', // green
-  '#90A4AE', // blue-grey
-  '#FFF176', // bright yellow
+  '#FFB74D', // Warm Orange
+  '#121212', // Black
+  '#FF654F', // Neon Flare
+  '#71ADBA', // Retro Blue
+  '#388E3C', // Emerald
+  '#FFFFF0', // Ivory
 ]
 const primary = ref(basePalette[0])
 const accent = ref(accentPalette[0])
@@ -108,6 +101,7 @@ const gradientBg = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 2.5rem 1rem 1.5rem 1rem;
   color: #fff;
   box-sizing: border-box;
@@ -129,8 +123,10 @@ const gradientBg = computed(() => {
 }
 .palette-label {
   margin-bottom: 0.7rem;
+  font-family: 'Raleway', sans-serif;
+  font-weight: 400;
   font-size: clamp(1rem, 2vw, 1.1rem);
-  color: #fff;
+  color: var(--accent, #E3DE61);
   text-align: center;
 }
 .palette-scroll-mask {
@@ -172,15 +168,32 @@ const gradientBg = computed(() => {
 }
 @media (max-width: 600px) {
   .settings-container {
-    padding: 1.2rem 0.2rem 1rem 0.2rem;
+    padding: 0.7rem 0.1rem 0.7rem 0.1rem;
+    min-width: 100vw;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
   }
   .palette-section {
-    max-width: 98vw;
+    max-width: 96vw;
+    margin-bottom: 1.2rem;
+    align-items: center;
+  }
+  .palette-label {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
   }
   .palette-options button {
-    width: 32px;
-    height: 32px;
-    aspect-ratio: 1/1;
+    width: 28px;
+    height: 28px;
+    margin-right: 0.4rem;
+  }
+  .back-btn {
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 1.1rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 0.9rem;
   }
 }
 .back-btn {

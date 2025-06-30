@@ -8,23 +8,23 @@
         :class="['toggle-btn', { active: selected === 'week' }]"
         @click="selected = 'week'"
       >
-        Week
+         Тиждень 
       </button>
       <button
         :class="['toggle-btn', { active: selected === 'month' }]"
         @click="selected = 'month'"
       >
-        Month
+        Місяць
       </button>
     </div>
     <div class="stats-chart">
-      <LineChart :data="chartData" :options="chartOptions" />
+      <LineChart ref="chartRef" :data="chartData" :options="chartOptions" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
   Chart,
@@ -40,8 +40,8 @@ import {
 Chart.register(LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend)
 
 const selected = ref('week')
-const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд']
+const months = ['Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер', 'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру']
 
 function getAllGroupData() {
   // Scan localStorage for all keys matching groups_YYYY-M-D
@@ -60,9 +60,15 @@ function getAllGroupData() {
 }
 
 const allData = ref({})
+const chartRef = ref(null)
 
 onMounted(() => {
   allData.value = getAllGroupData()
+  nextTick(() => {
+    if (chartRef.value && chartRef.value.chart) {
+      chartRef.value.chart.update()
+    }
+  })
 })
 
 const chartData = computed(() => {
@@ -84,15 +90,28 @@ const chartData = computed(() => {
       labels,
       datasets: [
         {
-          label: 'Clicks',
+          label: 'Чіхи',
           data,
-          fill: false,
+          fill: true,
           borderColor: '#fff',
-          backgroundColor: '#fff',
+          backgroundColor: (ctx) => {
+            const chart = ctx.chart
+            const {ctx: canvasCtx, chartArea} = chart
+            if (!chartArea) {
+              // Fallback to accent color if chartArea is not ready
+              return getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#E3DE61'
+            }
+            const gradient = canvasCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#E3DE61'
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary') || '#2F5249'
+            gradient.addColorStop(0, accent)
+            gradient.addColorStop(1, primary)
+            return gradient
+          },
           tension: 0.4,
           pointRadius: 5,
           pointBackgroundColor: '#fff',
-          pointBorderColor: '#42b883',
+          pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#E3DE61',
           pointHoverRadius: 7
         }
       ]
@@ -112,9 +131,23 @@ const chartData = computed(() => {
         {
           label: 'Clicks',
           data: monthSums,
-          fill: false,
+          fill: true,
           borderColor: '#fff',
-          backgroundColor: '#fff',
+          backgroundColor: (ctx) => {
+            const chart = ctx.chart
+            const {ctx: canvasCtx, chartArea} = chart
+            console.log('Chart backgroundColor ctx:', ctx)
+            if (!chartArea) {
+              // Fallback to accent color if chartArea is not ready
+              return getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#E3DE61'
+            }
+            const gradient = canvasCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#E3DE61'
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary') || '#2F5249'
+            gradient.addColorStop(0, accent)
+            gradient.addColorStop(1, primary)
+            return gradient
+          },
           tension: 0.4,
           pointRadius: 5,
           pointBackgroundColor: '#fff',
@@ -135,16 +168,24 @@ const chartOptions = {
   scales: {
     x: {
       grid: { display: false },
-      ticks: { color: '#e0e0e0', font: { size: 14 } }
+      ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#E3DE61', font: { size: 14 } }
     },
     y: {
-      grid: { color: '#e0e0e0' },
-      ticks: { color: '#e0e0e0', font: { size: 14 } }
+      grid: { color: 'rgba(255,255,255,0.15)' },
+      ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#E3DE61', font: { size: 14 } }
     }
   }
 }
 
 const LineChart = Line
+
+function onDayClick(day) {
+  // day is a Date object
+  const year = day.getFullYear();
+  const month = (day.getMonth() + 1).toString().padStart(2, '0');
+  const date = day.getDate().toString().padStart(2, '0');
+  selectedDay.value = `${year}-${month}-${date}`;
+}
 </script>
 
 <style scoped>
@@ -164,9 +205,9 @@ const LineChart = Line
   background: linear-gradient(180deg, var(--primary, #2F5249) 0%, var(--accent, #E3DE61) 100%);
 }
 .back-btn {
-  position: absolute;
-  bottom: 1rem;
-  left: 1rem;
+  position: fixed;
+  top: 1.2rem;
+  left: 1.2rem;
   background: var(--accent, #E3DE61);
   color: var(--primary, #2F5249);
   border: none;
@@ -177,10 +218,11 @@ const LineChart = Line
   box-shadow: 0 2px 8px var(--primary, #2F5249)33;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
-  z-index: 200;
+  z-index: 300;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(8px);
 }
 .back-btn:active {
   background: var(--primary, #2F5249);
@@ -193,26 +235,27 @@ const LineChart = Line
 }
 .toggle-segment {
   display: flex;
-  background: var(--primary, #181818);
+  background: var(--primary, #181818)cc;
   border-radius: 2rem;
   padding: 2px;
-  width: 220px;
+  width: 160px;
   margin: 0 auto 1.2rem auto;
   border: 1.5px solid var(--accent, #E3DE61);
   box-sizing: border-box;
   justify-content: center;
-  position: absolute;
+  position: fixed;
+  top: 1.2rem;
   left: 50%;
-  bottom: 1.2rem;
   transform: translateX(-50%);
-  z-index: 10;
+  z-index: 250;
+  backdrop-filter: blur(8px);
 }
 .toggle-btn {
   flex: 1 1 0;
   border: none;
   background: transparent;
   color: var(--accent, #E3DE61);
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 600;
   border-radius: 2rem;
   padding: 0.5rem 0;
@@ -246,18 +289,18 @@ const LineChart = Line
     gap: 3vw;
   }
   .toggle-segment {
-    position: absolute;
     top: 1.2rem;
     left: 50%;
     bottom: auto;
     transform: translateX(-50%);
     margin: 0;
-    z-index: 10;
+    z-index: 250;
   }
   .back-btn {
-    top: 1rem;
+    top: 1.2rem;
+    left: 1.2rem;
     bottom: auto;
-    left: 1rem;
+    z-index: 300;
   }
   .stats-chart {
     flex: 1 1 0;

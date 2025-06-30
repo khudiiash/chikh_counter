@@ -38,8 +38,13 @@ router.beforeEach((to, from, next) => {
 })
 
 // Load color preferences on startup
-const primary = localStorage.getItem('color-primary') || '#2F5249'
-const accent = localStorage.getItem('color-accent') || '#E3DE61'
+if (!localStorage.getItem('color-primary')) localStorage.setItem('color-primary', '#E3F0FF')
+if (!localStorage.getItem('color-accent')) localStorage.setItem('color-accent', '#FFB74D')
+
+const primary = localStorage.getItem('color-primary')
+const accent = localStorage.getItem('color-accent')
+  console.log(primary, accent)
+
 document.documentElement.style.setProperty('--primary', primary)
 document.documentElement.style.setProperty('--accent', accent)
 

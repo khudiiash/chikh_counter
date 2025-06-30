@@ -7,13 +7,8 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import ClockGroups from '../components/ClockGroups.vue'
 import BurgerMenu from '../components/BurgerMenu.vue'
 
-const basePalette = [
-  '#2F5249', '#1976D2', '#D32F2F', '#7B1FA2', '#F57C00', '#388E3C', '#455A64', '#212121',
-]
-const accentPalette = [
-  '#E3DE61', '#64B5F6', '#F44336', '#BA68C8', '#FFB74D', '#81C784', '#90A4AE', '#FFF176',
-]
-const primary = ref(localStorage.getItem('color-primary') && basePalette.includes(localStorage.getItem('color-primary')) ? localStorage.getItem('color-primary') : basePalette[0])
+const primary = ref(localStorage.getItem('color-primary'))
+
 function hexToRgb(hex) {
   let c = hex.replace('#', '')
   if (c.length === 3) c = c.split('').map(x => x + x).join('')
@@ -37,6 +32,7 @@ const gradientBg = computed(() => {
   const base = primary.value
   const light = shadeColor(base, 0.5)
   const dark = shadeColor(base, -0.3)
+  console.log(base, light, dark)
   return `linear-gradient(135deg, ${light} 0%, ${base} 50%, ${dark} 100%)`
 })
 
@@ -98,7 +94,8 @@ async function increment() {
     todayGroups.push({ start: t, count: 1 })
   } else {
     const last = todayGroups[todayGroups.length - 1]
-    if (t - last.start < 60 * 1000) {
+    const time = 30 * 60 * 1000; // 30 minutes
+    if (t - last.start < time) {
       last.count++
     } else {
       todayGroups.push({ start: t, count: 1 })
@@ -125,51 +122,74 @@ onMounted(() => {
 <template>
   <main class="main-container" :style="{ background: gradientBg }">
     <BurgerMenu />
-    <div v-if="loading" class="loader-overlay">
-      <div class="loader"></div>
-    </div>
-    <div :class="['counter', { animated: animateCounter }]">{{ counter }}</div>
+    <div class="counter" :class="{ animated: animateCounter }">{{ counter }}</div>
     <ClockGroups :groups="groups" />
-    <button class="tap-btn" @click="increment">Чіх</button>
+    <button class="tap-btn" @click="increment">ЧІХ</button>
   </main>
 </template>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@700;900&display=swap');
 .main-container {
-  min-height: 100vh;
-  height: 100vh;
-  background: var(--primary, #2F5249);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2.5rem 1rem 1.5rem 1rem;
-  box-sizing: border-box;
+  justify-content: center;
+  height: 100vh;
   width: 100vw;
-  margin: 0 auto;
-  position: relative;
   overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+  padding: 0;
 }
-.loader-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.7);
+.counter {
+  margin-bottom: 1.5rem;
+  font-size: clamp(4.2rem, 6vw, 4rem);
+  font-weight: 400;
+  color: #fff;
+  text-align: center;
+  background: var(--accent, #E3DE61);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 4px #0002) drop-shadow(0 0 16px var(--accent, #E3DE61));
+  will-change: filter;
+  transition: transform 0.2s cubic-bezier(.68,-0.55,.27,1.55), text-shadow 0.3s;
+  perspective: 80px;
+  transform-style: preserve-3d;
+}
+.counter.animated {
+  transform: scale(1.18) rotateX(8deg);
+  text-shadow:
+    0 0 32px var(--accent, #E3DE61)cc,
+    0 2px 16px #000a,
+    0 8px 32px var(--primary, #2F5249)66;
+}
+.ClockGroups, .clock-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  margin: 0 auto;
+  width: min(70vw, 60vh, 400px);
+  height: min(70vw, 60vh, 400px);
+  aspect-ratio: 1/1;
 }
-.loader {
-  border: 6px solid #eee;
-  border-top: 6px solid var(--accent, #E3DE61);
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.tap-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 2.5rem;
+  transform: translateX(-50%);
+  width: 90vw;
+  max-width: 100px;
+  border-radius: 50px;
+  background: var(--primary, #2F5249);
+  color: var(--accent, #E3DE61);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  box-shadow: 0 0px 16px var(--primary, #E3DE61);
+  cursor: pointer;
+  margin-bottom: 0;
 }
 .logout-btn {
   position: absolute;
@@ -198,51 +218,6 @@ onMounted(() => {
   display: block;
   width: 1.7em;
   height: 1.7em;
-}
-.counter {
-  font-size: clamp(4.2rem, 6vw, 4rem);
-  font-weight: 400;
-  color: #fff;
-  margin-bottom: 2.5rem;
-  margin-top: 2rem;
-  text-align: center;
-  background: var(--accent, #E3DE61);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 0 32px #222b) drop-shadow(0 0 12px #222b) drop-shadow(0 0 4px var(--accent, #E3DE61));
-  transition: transform 0.2s cubic-bezier(.68,-0.55,.27,1.55), text-shadow 0.3s;
-  perspective: 80px;
-  transform-style: preserve-3d;
-  font-family: 'Raleway', Arial, Helvetica, sans-serif;
-}
-.counter.animated {
-  transform: scale(1.18) rotateX(8deg);
-  text-shadow:
-    0 0 32px var(--accent, #E3DE61)cc,
-    0 2px 16px #000a,
-    0 8px 32px var(--primary, #2F5249)66;
-}
-.tap-btn {
-  position: fixed;
-  left: 50%;
-  bottom: 2.5rem;
-  transform: translateX(-50%);
-  width: min(90vw, 400px);
-  font-size: clamp(1.2rem, 4vw, 2.2rem);
-  font-weight: 600;
-  padding: 1.2rem 0;
-  border-radius: 2.5rem;
-  background: linear-gradient(90deg, var(--accent, #E3DE61) 60%, var(--primary, #2F5249) 100%);
-  color: var(--primary, #2F5249);
-  border: none;
-  box-shadow: 0 4px 16px var(--accent, #E3DE61)33;
-  transition: background 0.2s, box-shadow 0.2s;
-  z-index: 110;
-}
-.tap-btn:active {
-  background: linear-gradient(90deg, var(--primary, #2F5249) 60%, var(--accent, #E3DE61) 100%);
-  box-shadow: 0 2px 8px var(--accent, #E3DE61)55;
 }
 .groups-section {
   width: min(90vw, 400px);
@@ -317,7 +292,7 @@ onMounted(() => {
   }
   .tap-btn {
     width: 96vw;
-    font-size: 1.5rem;
+    font-size: 1rem;
     bottom: 1.2rem;
     padding: 1.1rem 0;
   }
@@ -330,34 +305,15 @@ onMounted(() => {
   }
 }
 @media (orientation: landscape) {
-  .main-container {
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    padding: 1rem 2.5vw 1rem 2.5vw;
-    height: 100vh;
-    min-height: 100vh;
-    width: 100vw;
-    gap: 4vw;
-  }
-  .counter {
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-    font-size: clamp(3rem, 8vw, 6rem);
-  }
-  .clock-container {
-    width: min(40vw, 40vh, 220px) !important;
-    height: min(40vw, 40vh, 220px) !important;
-    margin: 0 2vw 0 0 !important;
-  }
   .tap-btn {
     left: auto;
-    right: 2.5vw;
-    bottom: 2.5vw;
-    transform: none;
-    width: min(40vw, 220px);
-    font-size: 1.3rem;
-    padding: 1rem 0;
+    right: 2.5rem;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    width: 80px;
+    height: 80px;
+    max-width: 80px;
   }
   .fab {
     right: 2.5vw;
@@ -367,10 +323,17 @@ onMounted(() => {
     font-size: 1.7rem;
   }
 }
+* {
+  user-select: none;
+}
 html, body {
   height: 100vh;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  user-select: none;
+}
+.clock-container {
+  will-change: filter;
 }
 </style> 
