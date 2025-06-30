@@ -8,6 +8,7 @@ import Auth from './views/Auth.vue'
 import Settings from './views/Settings.vue'
 import Calendar from './views/Calendar.vue'
 import { auth } from './firebase'
+import { registerSW } from 'virtual:pwa-register'
 
 const routes = [
   { path: '/', component: Home, meta: { requiresAuth: true } },
@@ -49,3 +50,5 @@ document.documentElement.style.setProperty('--primary', primary)
 document.documentElement.style.setProperty('--accent', accent)
 
 createApp(App).use(router).mount('#app')
+
+registerSW({ immediate: true })

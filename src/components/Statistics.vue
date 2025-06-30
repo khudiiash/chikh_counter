@@ -179,13 +179,6 @@ const chartOptions = {
 
 const LineChart = Line
 
-function onDayClick(day) {
-  // day is a Date object
-  const year = day.getFullYear();
-  const month = (day.getMonth() + 1).toString().padStart(2, '0');
-  const date = day.getDate().toString().padStart(2, '0');
-  selectedDay.value = `${year}-${month}-${date}`;
-}
 </script>
 
 <style scoped>
