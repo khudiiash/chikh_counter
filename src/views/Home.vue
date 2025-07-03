@@ -40,15 +40,68 @@ const animateCounter = ref(false)
 const groups = ref([])
 const allGroups = ref({})
 const loading = ref(true)
-const now = () => new Date()
-const todayKey = () => {
-  const d = now()
-  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`
+const today = ref(null)
+const viewedDate = ref(new Date())
+const isToday = computed(() => {
+  if (!today.value) return false
+  return (
+    viewedDate.value.getFullYear() === today.value.getFullYear() &&
+    viewedDate.value.getMonth() === today.value.getMonth() &&
+    viewedDate.value.getDate() === today.value.getDate()
+  )
+})
+
+function formatKey(date) {
+  return `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
+}
+
+function setViewedDate(date) {
+  viewedDate.value = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+const slideDirection = ref('') // 'left' or 'right' for animation
+
+function handleSwipeRight() {
+  // Swipe right (left-to-right): show previous day, slide-right
+  const prev = new Date(viewedDate.value)
+  prev.setDate(prev.getDate() - 1)
+  slideDirection.value = 'right'
+  requestAnimationFrame(() => {
+    setViewedDate(prev)
+  })
+}
+function handleSwipeLeft() {
+  // Swipe left (right-to-left): show next day, slide-left
+  if (!isToday.value) {
+    const next = new Date(viewedDate.value)
+    next.setDate(next.getDate() + 1)
+    // Don't go past today
+    if (
+      next.getFullYear() > today.value.getFullYear() ||
+      (next.getFullYear() === today.value.getFullYear() && next.getMonth() > today.value.getMonth()) ||
+      (next.getFullYear() === today.value.getFullYear() && next.getMonth() === today.value.getMonth() && next.getDate() > today.value.getDate())
+    ) {
+      return
+    }
+    slideDirection.value = 'left'
+    requestAnimationFrame(() => {
+      setViewedDate(next)
+    })
+  }
+}
+
+function returnToToday() {
+  if (!today.value) return;
+  if (isToday.value) return
+  slideDirection.value = 'left';
+  requestAnimationFrame(() => {
+    setViewedDate(new Date(today.value.getFullYear(), today.value.getMonth(), today.value.getDate()));
+  });
 }
 
 function updateTodayGroupsFromAll() {
-  const today = todayKey()
-  groups.value = allGroups.value[today] || []
+  const key = formatKey(viewedDate.value)
+  groups.value = allGroups.value[key] || []
   const newCount = groups.value.reduce((sum, g) => sum + g.count, 0)
   if (counter.value !== newCount) {
     animateCounter.value = true
@@ -81,14 +134,14 @@ async function saveGroupsToFirestore() {
 
 function saveTodayGroupsLocally() {
   // Optional: keep localStorage for offline use
-  localStorage.setItem('groups_' + todayKey(), JSON.stringify(groups.value))
+  localStorage.setItem('groups_' + formatKey(viewedDate.value), JSON.stringify(groups.value))
 }
 
 async function increment() {
-  const t = now().getTime()
-  const today = todayKey()
-  if (!allGroups.value[today]) allGroups.value[today] = []
-  const todayGroups = allGroups.value[today]
+  const t = new Date().getTime()
+  const key = formatKey(viewedDate.value)
+  if (!allGroups.value[key]) allGroups.value[key] = []
+  const todayGroups = allGroups.value[key]
   if (todayGroups.length === 0) {
     todayGroups.push({ start: t, count: 1 })
   } else {
@@ -102,7 +155,7 @@ async function increment() {
   }
   groups.value = todayGroups
   counter.value = groups.value.reduce((sum, g) => sum + g.count, 0)
-  allGroups.value[today] = todayGroups
+  allGroups.value[key] = todayGroups
   saveTodayGroupsLocally()
   await saveGroupsToFirestore()
 }
@@ -113,17 +166,51 @@ const handleLogout = async () => {
   router.push('/auth')
 }
 
+const todayLabel = computed(() => {
+  const d = viewedDate.value
+  // Format: Friday, June 7 (localized)
+  return d.toLocaleDateString('uk-UA', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+    .replace(/^./, c => c.toUpperCase()) // capitalize first letter
+})
+
+watch(viewedDate, updateTodayGroupsFromAll)
+
+const grayscaleAmount = computed(() => isToday.value ? 0 : 1)
+
 onMounted(() => {
+  const d = new Date()
+  today.value = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  setViewedDate(new Date(today.value))
   loadGroupsFromFirestore()
 })
 </script>
 
 <template>
-  <main class="main-container" :style="{ background: gradientBg }">
+  <main
+    class="main-container"
+    :style="{ background: gradientBg, filter: `grayscale(${grayscaleAmount})`, transition: 'filter 0.4s' }"
+    v-touch:swipe.right="handleSwipeRight"
+    v-touch:swipe.left="handleSwipeLeft"
+  >
     <BurgerMenu />
-    <div class="counter" :class="{ animated: animateCounter }">{{ counter }}</div>
-    <ClockGroups :groups="groups" />
-    <button class="tap-btn" @click="increment">ЧІХ</button>
+    <div class="today-label-fixed">{{ todayLabel }}</div>
+    <div class="slide-parent">
+      <transition :name="slideDirection === 'left' ? 'slide-left' : slideDirection === 'right' ? 'slide-right' : ''" mode="out-in" @after-enter="slideDirection = ''">
+        <div class="swipe-content" :key="formatKey(viewedDate)">
+          <div class="spacer-top"></div>
+          <div class="center-content">
+            <div class="counter" :class="{ animated: animateCounter }">{{ counter }}</div>
+            <ClockGroups :groups="groups" />
+          </div>
+          <div class="spacer-bottom"></div>
+          <button class="tap-btn" @click="isToday ? increment() : returnToToday()">{{ isToday ? 'ЧІХ' : 'Назад' }}</button>
+        </div>
+      </transition>
+    </div>
   </main>
 </template>
 
@@ -141,9 +228,76 @@ onMounted(() => {
   box-sizing: border-box;
   padding: 0;
 }
+.slide-parent {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+.swipe-content {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: stretch;
+  box-sizing: border-box;
+  padding: 0 0 0 0;
+}
+/* Slide transition animations for content */
+.slide-left-enter-active, .slide-left-leave-active,
+.slide-right-enter-active, .slide-right-leave-active {
+  transition: transform 0.35s cubic-bezier(.55,0,.1,1);
+  will-change: transform;
+}
+.slide-left-enter-from {
+  transform: translateX(100vw);
+}
+.slide-left-leave-to {
+  transform: translateX(-100vw);
+}
+.slide-right-enter-from {
+  transform: translateX(-100vw);
+}
+.slide-right-leave-to {
+  transform: translateX(100vw);
+}
+.today-label-fixed {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 110;
+  width: max-content;
+  min-width: 120px;
+  max-width: 90vw;
+  pointer-events: none;
+  text-align: center;
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-weight: 500;
+  color: #fff9;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 8px #0003;
+  user-select: none;
+}
+.spacer-top {
+  flex: 1 1 0;
+}
+.spacer-bottom {
+  flex: 1 1 0;
+}
+.center-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
 .counter {
-  margin-bottom: 1.5rem;
-  font-size: clamp(4.2rem, 6vw, 4rem);
+  font-size: clamp(4.2rem, 10vw, 4rem);
   font-weight: 400;
   color: #fff;
   text-align: center;
@@ -156,6 +310,7 @@ onMounted(() => {
   transition: transform 0.2s cubic-bezier(.68,-0.55,.27,1.55), text-shadow 0.3s;
   perspective: 80px;
   transform-style: preserve-3d;
+  margin-bottom: 0;
 }
 .counter.animated {
   transform: scale(1.18) rotateX(8deg);
@@ -172,15 +327,15 @@ onMounted(() => {
   width: min(70vw, 60vh, 400px);
   height: min(70vw, 60vh, 400px);
   aspect-ratio: 1/1;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .tap-btn {
-  position: fixed;
-  left: 50%;
-  bottom: 2.5rem;
-  transform: translateX(-50%);
-  width: 90vw;
-  max-width: 100px;
-  border-radius: 50px;
+  width: 100px;
+  height: 100px;
+  border-radius: 100px;
   background: var(--primary, #2F5249);
   color: var(--accent, #E3DE61);
   font-size: 1rem;
@@ -188,7 +343,14 @@ onMounted(() => {
   padding: 0.5rem 1.1rem;
   box-shadow: 0 0px 16px var(--primary, #E3DE61);
   cursor: pointer;
-  margin-bottom: 0;
+  margin-bottom: 2.5rem;
+  margin-top: 2.5rem;
+  align-self: center;
+  position: static;
+  left: unset;
+  bottom: unset;
+  transform: none;
+  z-index: 110;
 }
 .logout-btn {
   position: absolute;
@@ -282,6 +444,7 @@ onMounted(() => {
   background: linear-gradient(135deg, var(--primary, #2F5249) 60%, var(--accent, #E3DE61) 100%);
   box-shadow: 0 2px 8px var(--accent, #E3DE61)55;
 }
+/* Portrait */
 @media (max-width: 600px) {
   .main-container {
     padding: 1.2rem 0.2rem 1rem 0.2rem;
@@ -290,9 +453,10 @@ onMounted(() => {
     padding: 1rem 0.2rem 0.5rem 0.2rem;
   }
   .tap-btn {
-    width: 96vw;
+    width: 100px;
+    height: 100px;
     font-size: 1rem;
-    bottom: 1.2rem;
+    bottom: 4rem;
     padding: 1.1rem 0;
   }
   .fab {
@@ -303,16 +467,38 @@ onMounted(() => {
     font-size: 1.7rem;
   }
 }
+/* Landscape */
 @media (orientation: landscape) {
+  .swipe-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .spacer-top, .spacer-bottom {
+    display: none;
+  }
+  .center-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1 1 auto;
+    gap: 0rem;
+    margin-top: 2.0rem;
+    margin-bottom: 0;
+    min-width: 0;
+    min-height: 0;
+  }
   .tap-btn {
-    left: auto;
-    right: 2.5rem;
+    position: fixed;
+    right: 2.5vw;
     top: 50%;
+    left: auto;
     bottom: auto;
     transform: translateY(-50%);
-    width: 80px;
-    height: 80px;
-    max-width: 80px;
+    margin: 0;
+    z-index: 120;
   }
   .fab {
     right: 2.5vw;
@@ -320,6 +506,17 @@ onMounted(() => {
     width: 56px;
     height: 56px;
     font-size: 1.7rem;
+  }
+}
+@media (orientation: portrait) {
+  .tap-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-bottom: 3.5rem;
+    margin-top: 2rem;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 16px var(--primary, #E3DE61)33;
   }
 }
 * {

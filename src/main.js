@@ -9,6 +9,7 @@ import Settings from './views/Settings.vue'
 import Calendar from './views/Calendar.vue'
 import { auth } from './firebase'
 import { registerSW } from 'virtual:pwa-register'
+import Vue3TouchEvents from 'vue3-touch-events'
 
 const routes = [
   { path: '/', component: Home, meta: { requiresAuth: true } },
@@ -48,6 +49,9 @@ const accent = localStorage.getItem('color-accent')
 document.documentElement.style.setProperty('--primary', primary)
 document.documentElement.style.setProperty('--accent', accent)
 
-createApp(App).use(router).mount('#app')
+const app = createApp(App)
+app.use(router)
+app.use(Vue3TouchEvents)
+app.mount('#app')
 
 registerSW({ immediate: true })

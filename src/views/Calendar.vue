@@ -16,8 +16,8 @@
         @dayclick="onDayClick"
       />
     </div>
-    <div v-if="selectedDay" class="day-info-box">
-      <span v-if="selectedDayCount !== null">Чіхів: {{ selectedDayCount }}</span>
+    <div class="day-info-box">
+      <span v-if="selectedDay && selectedDayCount !== null">Чіхів: {{ selectedDayCount }}</span>
     </div>
   </div>
 </template>
@@ -26,6 +26,7 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { Calendar } from 'v-calendar'
 import 'v-calendar/style.css'
+import { getAllGroupsForCurrentUser } from '../firebase'
 
 const allData = ref({})
 const attrs = ref([])
@@ -43,25 +44,24 @@ function onDayClick(day) {
   selectedDay.value = dateStr
 }
 
-function getAllGroupData() {
+async function getAllGroupData() {
+  // Fetch from Firestore
+  const groups = await getAllGroupsForCurrentUser()
   const data = {}
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key && key.startsWith('groups_')) {
-      const dateStr = key.replace('groups_', '')
-      const [year, month, day] = dateStr.split('-').map(Number)
-      const groups = JSON.parse(localStorage.getItem(key) || '[]')
-      const count = groups.reduce((sum, g) => sum + g.count, 0)
-      const formatted = `${year}-${pad(month)}-${pad(day)}`
-      data[formatted] = count
-    }
+  for (const dateStr in groups) {
+    const groupArr = groups[dateStr] || []
+    const count = groupArr.reduce((sum, g) => sum + g.count, 0)
+    // Format dateStr to YYYY-MM-DD (pad month/day)
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const formatted = `${year}-${pad(month)}-${pad(day)}`
+    data[formatted] = count
   }
   return data
 }
 
 async function updateMonthData() {
   await nextTick()
-  allData.value = getAllGroupData()
+  allData.value = await getAllGroupData()
   attrs.value = Object.entries(allData.value).map(([dateStr, count]) => ({
     key: dateStr,
     highlight: true,
@@ -83,7 +83,7 @@ let monthTitle = null;
 function onUpdate(e) {
   const currentMonthTitle = e[0].monthTitle
   if (currentMonthTitle !== monthTitle) {
-    allData.value = getAllGroupData()
+    updateMonthData()
     monthTitle = currentMonthTitle;
   }
 }
@@ -95,25 +95,16 @@ const selectedDayCount = computed(() => {
 
 const paintHighlights = () => {
   const days = document.querySelectorAll('.vc-day')
+  const monthMaximumCount = Math.max(...Object.values(allData.value)) || 1;
   days.forEach(cell => {
     const dateStr = [...cell.classList].find(cls => cls.includes('id-')).replace('id-', '')
     if (!dateStr) return;
     const count = allData.value[dateStr] || 0
     if (count === 0) return;
-    const highlights = cell.querySelector('.vc-highlights')
-    if (!highlights) return;
-    const scale = 0.7 + 0.7 * Math.min(count / 10, 1);
-    highlights.style.transform = `scale(${scale})`
-
-    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').split(',').map(Number)
-    const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary').split(',').map(Number)
-    const t = Math.max(0, Math.min(1, (scale - 0.7) / 0.7));
-    const lerp = (a, b, t) => Math.round(a + (b - a) * t);
-    const r = lerp(accent[0], primary[0], t);
-    const g = lerp(accent[1], primary[1], t);
-    const b = lerp(accent[2], primary[2], t);
-    const color = `rgb(${r},${g},${b})`;
-    highlights.style.backgroundColor = color;
+    const highlight = cell.querySelector('.vc-highlight')
+    if (!highlight) return;
+    const opacity = count / monthMaximumCount;
+    highlight.style.opacity = opacity;
   })
 }
 
@@ -176,15 +167,11 @@ const paintHighlights = () => {
   background: var(--primary, #2F5249) !important;
 }
 .themed-calendar :deep(.vc-highlights) {
-  filter: blur(1px);
-  border-radius: 10rem;
   mix-blend-mode: soft-light;
 }
 
-.themed-calendar :deep(.vc-highlight) {
-  filter: blur(1px);
-  mix-blend-mode: hard-light;
-  border-radius: 10rem;
+.themed-calendar :deep(.vc-highlight-bg-solid) {
+  border-radius: 5px !important;
 }
 
 .back-btn:active {
@@ -205,5 +192,7 @@ const paintHighlights = () => {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  min-height: 2.2rem; /* Reserve space to prevent layout shift */
 }
+
 </style> 

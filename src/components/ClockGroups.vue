@@ -28,7 +28,6 @@
             :r="dotRadius(g.count)"
             class="group-dot"
             :style="dotStyle(i)"
-            @click="showCount(i, $event)"
             fill="url(#dot-gradient)"
           />
           <text
@@ -88,17 +87,6 @@ function dotRadius(count) {
 const showIdx = ref(null)
 const countPosStyle = ref({})
 
-function showCount(idx, evt) {
-  showIdx.value = idx
-  // Position the count label near the dot
-  const svgRect = evt.target.ownerSVGElement.getBoundingClientRect()
-  const dotRect = evt.target.getBoundingClientRect()
-  countPosStyle.value = {
-    left: `${dotRect.left - svgRect.left + dotRect.width / 2}px`,
-    top: `${dotRect.top - svgRect.top - 10}px`
-  }
-  setTimeout(() => { showIdx.value = null }, 1500)
-}
 
 function dotStyle(i) {
   return {

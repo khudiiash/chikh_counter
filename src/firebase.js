@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, doc, getDoc } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: "AIzaSyDXxGvAaldYqYysPQHlMkQXbOVTpaxnjuA",
@@ -13,4 +13,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
-export const db = getFirestore(app) 
+export const db = getFirestore(app)
+
+export async function getAllGroupsForCurrentUser() {
+  const user = auth.currentUser
+  if (!user) return {}
+  const userDoc = doc(db, 'users', user.uid)
+  const snap = await getDoc(userDoc)
+  if (snap.exists()) {
+    return snap.data().groups || {}
+  } else {
+    return {}
+  }
+} 

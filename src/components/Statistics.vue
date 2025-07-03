@@ -36,6 +36,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
+import { getAllGroupsForCurrentUser } from '../firebase'
 
 Chart.register(LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend)
 
@@ -43,18 +44,14 @@ const selected = ref('week')
 const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд']
 const months = ['Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер', 'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру']
 
-function getAllGroupData() {
-  // Scan localStorage for all keys matching groups_YYYY-M-D
+async function getAllGroupData() {
+  // Fetch from Firestore
+  const groups = await getAllGroupsForCurrentUser()
   const data = {}
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key && key.startsWith('groups_')) {
-      const dateStr = key.replace('groups_', '')
-      const [year, month, day] = dateStr.split('-').map(Number)
-      const groups = JSON.parse(localStorage.getItem(key) || '[]')
-      const count = groups.reduce((sum, g) => sum + g.count, 0)
-      data[dateStr] = { year, month, day, count }
-    }
+  for (const dateStr in groups) {
+    const groupArr = groups[dateStr] || []
+    const count = groupArr.reduce((sum, g) => sum + g.count, 0)
+    data[dateStr] = { ...groupArr.length ? { year: Number(dateStr.split('-')[0]), month: Number(dateStr.split('-')[1]), day: Number(dateStr.split('-')[2]) } : {}, count }
   }
   return data
 }
@@ -62,8 +59,8 @@ function getAllGroupData() {
 const allData = ref({})
 const chartRef = ref(null)
 
-onMounted(() => {
-  allData.value = getAllGroupData()
+onMounted(async () => {
+  allData.value = await getAllGroupData()
   nextTick(() => {
     if (chartRef.value && chartRef.value.chart) {
       chartRef.value.chart.update()
