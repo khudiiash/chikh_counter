@@ -267,7 +267,7 @@ onMounted(() => {
 }
 .today-label-fixed {
   position: fixed;
-  top: 1rem;
+  top: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 110;
@@ -278,7 +278,7 @@ onMounted(() => {
   text-align: center;
   font-size: clamp(1.1rem, 2vw, 1.5rem);
   font-weight: 500;
-  color: #fff9;
+  color: var(--accent, #E3DE61);
   letter-spacing: 0.01em;
   text-shadow: 0 1px 8px #0003;
   user-select: none;
@@ -334,8 +334,8 @@ onMounted(() => {
 }
 .tap-btn {
   width: 100px;
-  height: 100px;
-  border-radius: 100px;
+  height: 60px;
+  border-radius: 20px;
   background: var(--primary, #2F5249);
   color: var(--accent, #E3DE61);
   font-size: 1rem;
@@ -445,19 +445,15 @@ onMounted(() => {
   box-shadow: 0 2px 8px var(--accent, #E3DE61)55;
 }
 /* Portrait */
-@media (max-width: 600px) {
+@media (orientation: portrait) {
   .main-container {
     padding: 1.2rem 0.2rem 1rem 0.2rem;
   }
+  .tap-btn {
+    margin-bottom: 4rem;
+  }
   .groups-section {
     padding: 1rem 0.2rem 0.5rem 0.2rem;
-  }
-  .tap-btn {
-    width: 100px;
-    height: 100px;
-    font-size: 1rem;
-    bottom: 4rem;
-    padding: 1.1rem 0;
   }
   .fab {
     right: 1rem;
@@ -492,7 +488,7 @@ onMounted(() => {
   }
   .tap-btn {
     position: fixed;
-    right: 2.5vw;
+    right: 4vw;
     top: 50%;
     left: auto;
     bottom: auto;
@@ -506,17 +502,6 @@ onMounted(() => {
     width: 56px;
     height: 56px;
     font-size: 1.7rem;
-  }
-}
-@media (orientation: portrait) {
-  .tap-btn {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    margin-bottom: 3.5rem;
-    margin-top: 2rem;
-    font-size: 1.2rem;
-    box-shadow: 0 4px 16px var(--primary, #E3DE61)33;
   }
 }
 * {
